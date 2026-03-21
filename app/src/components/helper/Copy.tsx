@@ -1,15 +1,30 @@
 import * as React from 'react'
-import Check from '@material-ui/icons/Check'
-import CustomIconButton from './CustomIconButton'
-import FileCopy from '@material-ui/icons/FileCopy'
+import Check from '@mui/icons-material/Check'
+import FileCopy from '@mui/icons-material/FileCopy'
 import { bindActionCreators } from 'redux'
 import { connect } from 'react-redux'
+import copyTextFallback from 'copy-text-to-clipboard'
 import { globalActions } from '../../actions'
+import CustomIconButton from './CustomIconButton'
 
-const copy = require('copy-text-to-clipboard')
+async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    // Try modern Clipboard API first (works in browser with HTTPS)
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text)
+      return true
+    }
+  } catch (error) {
+    console.warn('Clipboard API failed, using fallback:', error)
+  }
+
+  // Fallback to copy-text-to-clipboard library
+  return copyTextFallback(text)
+}
 
 interface Props {
-  value: string
+  value?: string
+  getValue?: () => string | undefined
   actions: {
     global: typeof globalActions
   }
@@ -25,15 +40,24 @@ class Copy extends React.PureComponent<Props, State> {
     this.state = { didCopy: false }
   }
 
-  private handleClick = (event: React.MouseEvent) => {
+  private handleClick = async (event: React.MouseEvent) => {
     event.stopPropagation()
 
-    copy(this.props.value)
-    this.props.actions.global.showNotification('Copied to clipboard')
-    this.setState({ didCopy: true })
-    setTimeout(() => {
-      this.setState({ didCopy: false })
-    }, 1500)
+    const text = this.props.value ?? this.props.getValue?.()
+    if (!text) {
+      return
+    }
+
+    const success = await copyToClipboard(text)
+    if (success) {
+      this.props.actions.global.showNotification('Copied to clipboard')
+      this.setState({ didCopy: true })
+      setTimeout(() => {
+        this.setState({ didCopy: false })
+      }, 1500)
+    } else {
+      this.props.actions.global.showNotification('Failed to copy to clipboard')
+    }
   }
 
   public render() {
@@ -44,19 +68,17 @@ class Copy extends React.PureComponent<Props, State> {
     )
 
     return (
-      <CustomIconButton onClick={this.handleClick} tooltip="Copy to clipboard">
+      <CustomIconButton onClick={this.handleClick} tooltip="Copy to clipboard" data-testid="copy-button">
         <div style={{ marginTop: '2px' }}>{icon}</div>
       </CustomIconButton>
     )
   }
 }
 
-const mapDispatchToProps = (dispatch: any) => {
-  return {
-    actions: {
-      global: bindActionCreators(globalActions, dispatch),
-    },
-  }
-}
+const mapDispatchToProps = (dispatch: any) => ({
+  actions: {
+    global: bindActionCreators(globalActions, dispatch),
+  },
+})
 
 export default connect(undefined, mapDispatchToProps)(Copy)

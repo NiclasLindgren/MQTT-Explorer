@@ -1,17 +1,17 @@
 import * as React from 'react'
-import DateFormatter from '../helper/DateFormatter'
-import { AppState } from '../../reducers'
 import { bindActionCreators } from 'redux'
 import { connect } from 'react-redux'
-import { Input, InputLabel, MenuItem, Select, Theme } from '@material-ui/core'
+import { Input, InputLabel, MenuItem, Select, Theme } from '@mui/material'
+import { withStyles } from '@mui/styles'
 import { settingsActions } from '../../actions'
-import { withStyles } from '@material-ui/styles'
+import { AppState } from '../../reducers'
+import DateFormatter from '../helper/DateFormatter'
 
 function importAll(r: any) {
-  r.keys().forEach(r);
+  r.keys().forEach(r)
 }
 // @ts-expect-error -- webpack require
-importAll(require.context('moment/locale', true, /\.js$/));
+importAll(require.context('moment/locale', true, /\.js$/))
 
 const moment = require('moment')
 
@@ -38,7 +38,7 @@ function TimeLocaleSettings(props: Props) {
     </MenuItem>
   ))
 
-  function updateLocale(e: React.ChangeEvent<{ value: unknown }>) {
+  function updateLocale(e: any) {
     const locale = e.target.value ? String(e.target.value) : ''
     actions.settings.setTimeLocale(locale)
   }
@@ -63,19 +63,15 @@ function TimeLocaleSettings(props: Props) {
   )
 }
 
-const mapStateToProps = (state: AppState) => {
-  return {
-    timeLocale: state.settings.get('timeLocale'),
-  }
-}
+const mapStateToProps = (state: AppState) => ({
+  timeLocale: state.settings.get('timeLocale'),
+})
 
-const mapDispatchToProps = (dispatch: any) => {
-  return {
-    actions: {
-      settings: bindActionCreators(settingsActions, dispatch),
-    },
-  }
-}
+const mapDispatchToProps = (dispatch: any) => ({
+  actions: {
+    settings: bindActionCreators(settingsActions, dispatch),
+  },
+})
 
 const styles = (theme: Theme) => ({
   input: {

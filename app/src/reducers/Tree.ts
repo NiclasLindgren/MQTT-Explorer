@@ -1,7 +1,7 @@
-import * as q from '../../../backend/src/Model'
 import { Action as ReduxAction } from 'redux'
-import { createReducer } from './lib'
 import { Record } from 'immutable'
+import * as q from '../../../backend/src/Model'
+import { createReducer } from './lib'
 import { TopicViewModel } from '../model/TopicViewModel'
 
 interface TreeStateModel {
@@ -45,12 +45,13 @@ const initialStateFactory = Record<TreeStateModel>({
   filter: undefined,
 })
 
-const setPaused = (pause: boolean) => (state: TreeState, action: ShowTree): TreeState => {
-  return state.set('paused', pause)
-}
+const setPaused =
+  (pause: boolean) =>
+  (state: TreeState, action: ShowTree): TreeState =>
+    state.set('paused', pause)
 
 const actions: {
-  [s: string]: (state: TreeState, action: ReduxAction) => TreeState
+  [s: string]: any
 } = {
   TREE_SHOW_TREE: showTree,
   TREE_SELECT_TOPIC: selectTopic,

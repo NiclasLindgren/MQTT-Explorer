@@ -17,10 +17,12 @@ export async function waitForDevServer() {
 }
 
 export function loadDevTools() {
+  /* spell-checker: disable */
   // Redux
   // BrowserWindow.addDevToolsExtension(
   //   path.join(os.homedir(), '/Library/Application Support/Google/Chrome/Default/Extensions/lmhkpmbekcpmknklioeibfkpmmfibljd/2.17.0_0/')
   // )
+  /* spell-checker: enable */
 }
 
 export function isDev() {
@@ -29,4 +31,23 @@ export function isDev() {
 
 export function runningUiTestOnCi() {
   return Boolean(process.argv.find(arg => arg === '--runningUiTestOnCi'))
+}
+
+export function enableMcpIntrospection() {
+  return Boolean(process.argv.find(arg => arg === '--enable-mcp-introspection'))
+}
+
+export function getRemoteDebuggingPort() {
+  const portArg = process.argv.find(arg => arg.startsWith('--remote-debugging-port='))
+  if (portArg) {
+    const parts = portArg.split('=')
+    if (parts.length === 2 && parts[1]) {
+      const port = parseInt(parts[1], 10)
+      // Return the port only if it's a valid number between 1 and 65535
+      if (!isNaN(port) && port > 0 && port <= 65535) {
+        return port
+      }
+    }
+  }
+  return enableMcpIntrospection() ? 9222 : undefined
 }

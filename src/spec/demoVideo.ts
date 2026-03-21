@@ -1,7 +1,11 @@
 import * as fs from 'fs'
 import * as os from 'os'
-import * as webdriverio from 'webdriverio'
+import * as path from 'path'
+
+import { ElectronApplication, _electron as electron } from 'playwright'
+
 import mockMqtt, { stop as stopMqtt } from './mock-mqtt'
+import { default as MockSparkplug } from './mock-sparkplugb'
 import { clearOldTopics } from './scenarios/clearOldTopics'
 import { clearSearch, searchTree } from './scenarios/searchTree'
 import { clickOnHistory, createFakeMousePointer, hideText, showText, sleep } from './util'
@@ -10,134 +14,162 @@ import { copyTopicToClipboard } from './scenarios/copyTopicToClipboard'
 import { copyValueToClipboard } from './scenarios/copyValueToClipboard'
 import { disconnect } from './scenarios/disconnect'
 import { publishTopic } from './scenarios/publishTopic'
-import { SceneBuilder } from './SceneBuilder'
+import { Scene, SceneBuilder } from './SceneBuilder'
 import { showAdvancedConnectionSettings } from './scenarios/showAdvancedConnectionSettings'
 import { showJsonPreview } from './scenarios/showJsonPreview'
 import { showMenu } from './scenarios/showMenu'
 import { showNumericPlot } from './scenarios/showNumericPlot'
 import { showOffDiffCapability } from './scenarios/showOffDiffCapability'
 import { showZoomLevel } from './scenarios/showZoomLevel'
+import { showSparkPlugDecoding } from './scenarios/showSparkplugDecoding'
 
-process.on('unhandledRejection', (error: Error | any) => {
+/**
+ *  A convenience method that handles gracefully cleaning up the test run.
+ */
+const cleanUp = async (scenes: SceneBuilder, electronApp: ElectronApplication) => {
+  // Exit app.
+  fs.writeFileSync('scenes.json', JSON.stringify(scenes.scenes, undefined, '  '))
+  await electronApp.close()
+}
+
+process.on('unhandledRejection' as any, (error: Error | any) => {
   console.error('unhandledRejection', error.message, error.stack)
   process.exit(1)
 })
 
+setTimeout(
+  () => {
+    console.error('Timeout reached')
+    process.exit(1)
+  },
+  60 * 10 * 1000
+)
+
 const runningUiTestOnCi = os.platform() === 'darwin' ? [] : ['--runningUiTestOnCi']
 
-const options = {
-  host: '127.0.0.1', // Use localhost as chrome driver server
-  port: 9515, // "9515" is the port opened by chrome driver.
-  path: '/wd/hub',
-  capabilities: {
-    browserName: 'chrome',
-    'goog:chromeOptions': {
-      binary: `${__dirname}/../../../node_modules/.bin/electron`,
-      args: [
-        `--app=${__dirname}/../../..`,
-        '--force-device-scale-factor=1',
-        '--no-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-extensions',
-      ].concat(runningUiTestOnCi),
-      windowTypes: ['app', 'webview'],
-    },
-  },
-}
-
 async function doStuff() {
-  console.log('Waiting for MQTT Broker on port 1880 (no auth)')
+  const brokerHost = process.env.TESTS_MQTT_BROKER_HOST || '127.0.0.1'
+  const brokerPort = process.env.TESTS_MQTT_BROKER_PORT || '1883'
+  console.log(`Waiting for MQTT Broker at ${brokerHost}:${brokerPort} (no auth)`)
   await mockMqtt()
-  console.log('start webdriver')
 
-  const browser = await webdriverio.remote(options)
-  await createFakeMousePointer(browser)
+  console.log('Starting playwright/electron')
+
+  // Launch Electron app.
+  const electronApp: ElectronApplication = await electron.launch({
+    args: [`${__dirname}/../../..`, ...runningUiTestOnCi],
+  })
+
+  console.log('Playwright started')
+  // Get the first window that the app opens, wait if necessary.
+  const page = await electronApp.firstWindow({ timeout: 3000 })
+  // Print the title.
+  console.log(await page.title())
+  // Capture a screenshot.
+  await page.screenshot({ path: 'intro.png' })
+  // Direct Electron console to Node terminal.
+  page.on('console', console.log)
 
   // Wait for Username input to be visible
-  await browser.$('//label[contains(text(), "Username")]/..//input')
+  await page.locator('//label[contains(text(), "Username")]/..//input')
 
   const scenes = new SceneBuilder()
   await scenes.record('connect', async () => {
-    await connectTo('127.0.0.1', browser)
+    await connectTo(brokerHost, page)
+    await MockSparkplug.run() // Start sparkplug client after connect or birth topics will be missed
     await sleep(1000)
   })
 
   await scenes.record('numeric_plots', async () => {
-    await showText('Plot topic history', 1500, browser)
-    await showNumericPlot(browser)
+    await showText('Plot topic history', 1500, page)
+    await showNumericPlot(page)
     await sleep(2000)
   })
 
   await scenes.record('json-formatting', async () => {
-    await showJsonPreview(browser)
-    await showText('Formatted messages', 1500, browser, 'top')
+    await showJsonPreview(page)
+    await showText('Formatted messages', 1500, page, 'top')
     await sleep(1500)
   })
 
   await scenes.record('diffs', async () => {
-    await showOffDiffCapability(browser)
-    await hideText(browser)
+    await showOffDiffCapability(page)
+    await hideText(page)
   })
 
-  await scenes.record('publish_topic', async () => {
-    await showText('Publish topics', 1500, browser, 'top')
-    await clickOnHistory(browser)
-    await publishTopic(browser)
-    await sleep(1000)
-  })
+  // disable this scenario for now until expandTopic is sorted out
+  // await scenes.record('publish_topic', async () => {
+  //   await showText('Publish topics', 1500, page, 'top')
+  //   await clickOnHistory(page)
+  //   await publishTopic(page)
+  //   await sleep(1000)
+  // })
 
   await scenes.record('clipboard', async () => {
-    await showText('Copy to Clipboard', 1500, browser)
-    await copyTopicToClipboard(browser)
-    await hideText(browser)
-    await copyValueToClipboard(browser)
+    await showText('Copy to Clipboard', 1500, page)
+    await copyTopicToClipboard(page)
+    await hideText(page)
+    await copyValueToClipboard(page)
     await sleep(1000)
   })
 
   await scenes.record('topic_filter', async () => {
-    await showText('Search topic hierarchy', 0, browser, 'middle')
-    await searchTree('temp', browser)
-    await hideText(browser)
-    await showText('Topics containing "temp"', 1500, browser)
+    await showText('Search topic hierarchy', 0, page, 'middle')
+    await searchTree('temp', page)
+    await hideText(page)
+    await showText('Topics containing "temp"', 1500, page)
     await sleep(1500)
-    await clearSearch(browser)
+    await clearSearch(page)
     await sleep(1000)
   })
 
-  await scenes.record('delete_retained_topics', async () => {
-    await hideText(browser)
-    await showText('Delete retained topics', 5000, browser)
-    await clearOldTopics(browser)
-    await hideText(browser)
+  await scenes.record('sparkplugb-decoding', async () => {
+    await showText('SparkplugB Decoding', 2000, page, 'top')
+    await showSparkPlugDecoding(page)
   })
 
+  // disable this scenario for now until expandTopic is sorted out
+  // await scenes.record('delete_retained_topics', async () => {
+  //   await hideText(page)
+  //   await showText('Delete retained topics', 5000, page)
+  //   await clearOldTopics(page)
+  //   await hideText(page)
+  // })
+
   await scenes.record('settings', async () => {
-    await showText('Settings', 1500, browser)
-    await showMenu(browser)
+    await showText('Settings', 1500, page)
+    await showMenu(page)
   })
 
   await scenes.record('customize_subscriptions', async () => {
     await sleep(2000)
-    await disconnect(browser)
-    await showText('Customize Subscriptions', 1500, browser, 'top')
-    await showAdvancedConnectionSettings(browser)
+    await disconnect(page)
+    await showText('Customize Subscriptions', 1500, page, 'top')
+    await showAdvancedConnectionSettings(page)
   })
 
   await scenes.record('keyboard_shortcuts', async () => {
-    await showText('Keyboard shortcuts', 1500, browser, 'middle')
+    await showText('Keyboard shortcuts', 1500, page, 'middle')
     await sleep(1750)
-    await showZoomLevel(browser)
+    await showZoomLevel(page)
   })
 
   await scenes.record('end', async () => {
-    await showText('The End', 3000, browser, 'middle')
+    await showText('The End', 3000, page, 'middle')
     await sleep(3000)
   })
 
-  browser.closeWindow()
+  setTimeout(() => {
+    console.log('Forced quit')
+    process.exit(0)
+  }, 10 * 1000)
   stopMqtt()
+  console.log('Stopped mqtt client')
 
-  fs.writeFileSync('scenes.json', JSON.stringify(scenes.scenes, undefined, '  '))
+  cleanUp(scenes, electronApp)
+
+  // Force exit since there appear to be open handles
+  process.exit(0)
 }
 
 doStuff()

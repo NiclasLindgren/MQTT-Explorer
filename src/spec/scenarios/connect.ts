@@ -1,11 +1,17 @@
-import { Browser, Element } from 'webdriverio'
+import { Page } from 'playwright'
 import { clickOn, setTextInInput } from '../util'
 
-export async function connectTo(host: string, browser: Browser<'async'>) {
+export async function connectTo(host: string, browser: Page) {
   await setTextInInput('Host', host, browser)
 
-  await browser.saveScreenshot('screen1.png')
+  // Try to capture screenshot (may fail in headed mode)
+  try {
+    await browser.screenshot({ path: 'screen1.png' })
+  } catch (error) {
+    // Screenshot may fail in headed mode, that's ok
+  }
 
-  const connectButton = await browser.$('//button/span[contains(text(),"Connect")]')
-  await clickOn(connectButton, browser)
+  // Use data-testid for reliable button location
+  const connectButton = browser.locator('[data-testid="connect-button"]')
+  await clickOn(connectButton)
 }

@@ -1,7 +1,7 @@
-import { Browser, Element } from 'webdriverio'
+import { Page } from 'playwright'
 import { clickOn } from '../util'
 
-export async function disconnect(browser: Browser<'async'>) {
-  const disconnectButton = await browser.$('//button/span[contains(text(),"Disconnect")]')
-  await clickOn(disconnectButton, browser)
+export async function disconnect(browser: Page) {
+  const disconnectButton = browser.locator('[data-testid="disconnect-button"]')
+  await clickOn(disconnectButton)
 }

@@ -1,7 +1,7 @@
-import { MqttOptions } from '../../../backend/src/DataSource'
 import { v4 } from 'uuid'
-import { Subscription } from '../../../backend/src/DataSource/MqttSource'
-const sha1 = require('sha1')
+import { Subscription } from 'mqtt-explorer-backend/src/DataSource/MqttSource'
+import sha1 from 'sha1'
+import { MqttOptions } from 'mqtt-explorer-backend/src/DataSource/DataSource'
 
 export interface CertificateParameters {
   name: string
@@ -77,11 +77,11 @@ export function createEmptyConnection(): ConnectionOptions {
 export function makeDefaultConnections() {
   return {
     // remember: there was also iot.eclipse.org once
-    'mqtt.eclipse.org': {
+    'mqtt.eclipseprojects.io': {
       ...createEmptyConnection(),
-      id: 'mqtt.eclipse.org',
-      name: 'mqtt.eclipse.org',
-      host: 'mqtt.eclipse.org',
+      id: 'mqtt.eclipseprojects.io',
+      name: 'mqtt.eclipseprojects.io',
+      host: 'mqtt.eclipseprojects.io',
     },
     'test.mosquitto.org': {
       ...createEmptyConnection(),

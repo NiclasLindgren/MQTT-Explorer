@@ -1,8 +1,12 @@
-import { Browser, Element } from 'webdriverio'
+import { Page, Locator } from 'playwright'
 import { expandTopic, sleep } from '../util'
 
-export async function showJsonPreview(browser: Browser<'async'>) {
+export async function showJsonPreview(browser: Page) {
   await expandTopic('actuality/showcase', browser)
-  await browser.saveScreenshot('screen3.png')
+  try {
+    await browser.screenshot({ path: 'screen3.png' })
+  } catch (error) {
+    // Screenshot may fail in headed mode
+  }
   await sleep(1000)
 }

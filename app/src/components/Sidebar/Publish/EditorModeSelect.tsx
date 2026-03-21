@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { FormControlLabel, Radio, RadioGroup } from '@material-ui/core'
+import { FormControlLabel, Radio, RadioGroup } from '@mui/material'
 
 interface Props {
   value: string
@@ -14,7 +14,7 @@ export function EditorModeSelect(props: Props) {
       value={props.value}
       onFocus={props.focusEditor}
       onChange={props.onChange}
-      row={true}
+      row
     >
       <FormControlLabel
         value="text"

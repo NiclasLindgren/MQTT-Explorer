@@ -1,10 +1,10 @@
 import * as React from 'react'
-import ArrowUpward from '@material-ui/icons/ArrowUpward'
+import ArrowUpward from '@mui/icons-material/ArrowUpward'
 import { bindActionCreators } from 'redux'
+import { connect } from 'react-redux'
+import { MenuItem, Typography, ListItemIcon } from '@mui/material'
 import { chartActions } from '../../../actions'
 import { ChartParameters } from '../../../reducers/Charts'
-import { connect } from 'react-redux'
-import { MenuItem, Typography, ListItemIcon } from '@material-ui/core'
 
 function MoveUp(props: { actions: { chart: typeof chartActions }; chart: ChartParameters; close: () => void }) {
   const moveUp = React.useCallback(() => {
@@ -25,12 +25,10 @@ function MoveUp(props: { actions: { chart: typeof chartActions }; chart: ChartPa
   )
 }
 
-const mapDispatchToProps = (dispatch: any) => {
-  return {
-    actions: {
-      chart: bindActionCreators(chartActions, dispatch),
-    },
-  }
-}
+const mapDispatchToProps = (dispatch: any) => ({
+  actions: {
+    chart: bindActionCreators(chartActions, dispatch),
+  },
+})
 
 export default connect(undefined, mapDispatchToProps)(MoveUp)

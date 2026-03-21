@@ -12,7 +12,7 @@ import {
   yellow,
   brown,
   blueGrey,
-} from '@material-ui/core/colors'
+} from '@mui/material/colors'
 
 export function colors() {
   function colorToInt(color: string): [number, number, number] {
@@ -22,7 +22,7 @@ export function colors() {
   function colorCompare(colorA: string, colorB: string) {
     const a = colorToInt(colorA)
     const b = colorToInt(colorB)
-    return Math.sqrt(Math.pow(a[0] - b[0], 2) + Math.pow(a[1] - b[1], 2) + Math.pow(a[2] - b[2], 2))
+    return Math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2)
   }
   const colors: Array<string> = [
     brown,

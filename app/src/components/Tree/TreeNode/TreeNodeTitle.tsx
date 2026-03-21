@@ -1,8 +1,9 @@
-import * as q from '../../../../../backend/src/Model'
 import React, { memo } from 'react'
-import { Base64Message } from '../../../../../backend/src/Model/Base64Message'
-import { Theme, withStyles } from '@material-ui/core'
+import { Theme } from '@mui/material/styles'
+import { withStyles } from '@mui/styles'
+import * as q from '../../../../../backend/src/Model'
 import { TopicViewModel } from '../../../model/TopicViewModel'
+import { useDecoder } from '../../hooks/useDecoder'
 
 export interface TreeNodeProps extends React.HTMLAttributes<HTMLElement> {
   treeNode: q.TreeNode<TopicViewModel>
@@ -14,90 +15,122 @@ export interface TreeNodeProps extends React.HTMLAttributes<HTMLElement> {
   classes: any
 }
 
-class TreeNodeTitle extends React.PureComponent<TreeNodeProps, {}> {
-  private renderSourceEdge() {
-    const name = this.props.name || (this.props.treeNode.sourceEdge && this.props.treeNode.sourceEdge.name)
+export function TreeNodeTitle(props: TreeNodeProps) {
+  const decodeMessage = useDecoder(props.treeNode)
+
+  function renderSourceEdge() {
+    const name = props.name || (props.treeNode.sourceEdge && props.treeNode.sourceEdge.name)
 
     return (
-      <span key="edge" className={this.props.classes.sourceEdge}>
+      <span key="edge" className={props.classes.sourceEdge} data-test-topic={name}>
         {name}
       </span>
     )
   }
 
-  private truncatedMessage() {
+  function truncatedMessage() {
     const limit = 400
-    if (!this.props.treeNode.message || !this.props.treeNode.message.payload) {
+    if (!props.treeNode.message || !props.treeNode.message.payload) {
       return ''
     }
+    const [value = ''] = decodeMessage(props.treeNode.message)?.message?.format(props.treeNode.type) ?? []
 
-    const str = Base64Message.toUnicodeString(this.props.treeNode.message.payload)
-    return str.length > limit ? `${str.slice(0, limit)}…` : str
+    return value.length > limit ? `${value.slice(0, limit)}…` : value
   }
 
-  private renderValue() {
-    return this.props.treeNode.message &&
-      this.props.treeNode.message.payload &&
-      this.props.treeNode.message.length > 0 ? (
-      <span key="value" className={this.props.classes.value}>
+  function renderValue() {
+    return props.treeNode.message && props.treeNode.message.payload && props.treeNode.message.length > 0 ? (
+      <span key="value" className={props.classes.value}>
         {' '}
-        = {this.truncatedMessage()}
+        = {truncatedMessage()}
       </span>
     ) : null
   }
 
-  private renderExpander() {
-    if (this.props.treeNode.edgeCount() === 0) {
+  function renderExpander() {
+    if (props.treeNode.edgeCount() === 0) {
       return null
     }
 
+    // On mobile, the expand button has its own click handler separate from topic selection
+    // On desktop, clicking anywhere (including expander) selects and toggles via didClickTitle
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768
+    const onClick = isMobile ? props.toggleCollapsed : undefined
+
     return (
-      <span key="expander" className={this.props.classes.expander} onClick={this.props.toggleCollapsed}>
-        {this.props.collapsed ? '▶' : '▼'}
+      <span
+        key="expander"
+        className={props.classes.expander}
+        onClick={onClick}
+        role="button"
+        aria-label={props.collapsed ? 'Expand topic' : 'Collapse topic'}
+        aria-expanded={!props.collapsed}
+        tabIndex={isMobile ? 0 : -1}
+      >
+        {props.collapsed ? '▶' : '▼'}
       </span>
     )
   }
 
-  private renderMetadata() {
-    if (this.props.treeNode.edgeCount() === 0 || !this.props.collapsed) {
+  function renderMetadata() {
+    if (props.treeNode.edgeCount() === 0 || !props.collapsed) {
       return null
     }
 
-    const messages = this.props.treeNode.leafMessageCount()
-    const topicCount = this.props.treeNode.childTopicCount()
+    const messages = props.treeNode.leafMessageCount()
+    const topicCount = props.treeNode.childTopicCount()
     return (
-      <span key="metadata" className={this.props.classes.collapsedSubnodes}>{` (${topicCount} ${
-        topicCount === 1 ? 'topic' : 'topics'
-      }, ${messages} ${messages === 1 ? 'message' : 'messages'})`}</span>
+      <span key="metadata" className={props.classes.collapsedSubnodes}>
+        {` (${topicCount} ${
+          topicCount === 1 ? 'topic' : 'topics'
+        }, ${messages} ${messages === 1 ? 'message' : 'messages'})`}
+      </span>
     )
   }
 
-  public render() {
-    return [this.renderExpander(), this.renderSourceEdge(), this.renderMetadata(), this.renderValue()]
-  }
+  return (
+    <>
+      {renderExpander()}
+      {renderSourceEdge()}
+      {renderMetadata()}
+      {renderValue()}
+    </>
+  )
 }
 
-const styles = (theme: Theme) => ({
-  value: {
-    whiteSpace: 'nowrap' as 'nowrap',
-    overflow: 'hidden' as 'hidden',
-    textOverflow: 'ellipsis' as 'ellipsis',
-    padding: '0',
-  },
-  sourceEdge: {
-    fontWeight: 'bold' as 'bold',
-    overflow: 'hidden' as 'hidden',
-  },
-  expander: {
-    color: theme.palette.type === 'light' ? '#222' : '#eee',
-    cursor: 'pointer' as 'pointer',
-    paddingRight: theme.spacing(0.25),
-    userSelect: 'none' as 'none',
-  },
-  collapsedSubnodes: {
-    color: theme.palette.text.secondary,
-    userSelect: 'none' as 'none',
-  },
-})
+const styles = (theme: Theme) => {
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768
+
+  return {
+    value: {
+      whiteSpace: 'nowrap' as const,
+      overflow: 'hidden' as const,
+      textOverflow: 'ellipsis' as const,
+      padding: '0',
+      fontSize: isMobile ? '15px' : 'inherit', // Slightly larger on mobile
+    },
+    sourceEdge: {
+      fontWeight: 'bold' as const,
+      overflow: 'hidden' as const,
+      fontSize: isMobile ? '16px' : 'inherit', // Base 16px on mobile to prevent zoom
+    },
+    expander: {
+      color: theme.palette.mode === 'light' ? '#222' : '#eee',
+      cursor: 'pointer' as const,
+      paddingRight: isMobile ? theme.spacing(1) : theme.spacing(0.25), // Larger touch area
+      paddingLeft: isMobile ? theme.spacing(0.5) : 0,
+      minWidth: isMobile ? '32px' : 'auto', // 40px total width on mobile for touch
+      display: 'inline-block' as const,
+      textAlign: 'center' as const,
+      userSelect: 'none' as const,
+      fontSize: isMobile ? '18px' : 'inherit', // Larger icon on mobile
+    },
+    collapsedSubnodes: {
+      color: theme.palette.text.secondary,
+      userSelect: 'none' as const,
+      fontSize: isMobile ? '14px' : 'inherit',
+    },
+  }
+}
 
 export default withStyles(styles)(memo(TreeNodeTitle))

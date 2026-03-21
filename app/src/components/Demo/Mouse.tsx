@@ -1,5 +1,7 @@
 import * as React from 'react'
-import { Theme, withStyles } from '@material-ui/core'
+import { Theme } from '@mui/material/styles'
+import { withStyles } from '@mui/styles'
+
 const cursor = require('./cursor.png')
 
 interface State {
@@ -12,11 +14,18 @@ interface State {
 
 class Demo extends React.Component<{ classes: any }, State> {
   private timer: any
+
   private frameInterval = 20
 
   constructor(props: any) {
     super(props)
-    this.state = { enabled: false, target: { x: 0, y: 0 }, position: { x: 0, y: 0 }, stepSizeX: 1, stepSizeY: 1 }
+    this.state = {
+      enabled: false,
+      target: { x: 0, y: 0 },
+      position: { x: 0, y: 0 },
+      stepSizeX: 1,
+      stepSizeY: 1,
+    }
   }
 
   private moveCloser(steps: number = 0) {
@@ -43,15 +52,20 @@ class Demo extends React.Component<{ classes: any }, State> {
   }
 
   public componentDidMount() {
-    ; (window as any).demo.enableMouse = () => {
+    ;(window as any).demo.enableMouse = () => {
       this.setState({ enabled: true })
     }
-      ; (window as any).demo.moveMouse = (x: number, y: number, animationTime: number) => {
-        const stepSizeX = Math.abs(this.state.position.x - x) / (animationTime / this.frameInterval)
-        const stepSizeY = Math.abs(this.state.position.y - y) / (animationTime / this.frameInterval)
-        this.setState({ stepSizeX, stepSizeY, enabled: true, target: { x, y } })
-        this.moveCloser()
-      }
+    ;(window as any).demo.moveMouse = (x: number, y: number, animationTime: number) => {
+      const stepSizeX = Math.abs(this.state.position.x - x) / (animationTime / this.frameInterval)
+      const stepSizeY = Math.abs(this.state.position.y - y) / (animationTime / this.frameInterval)
+      this.setState({
+        stepSizeX,
+        stepSizeY,
+        enabled: true,
+        target: { x, y },
+      })
+      this.moveCloser()
+    }
   }
 
   public render() {
@@ -72,10 +86,10 @@ const style = (theme: Theme) => ({
   cursor: {
     width: '32px',
     height: '32px',
-    position: 'fixed' as 'fixed',
+    position: 'fixed' as const,
     zIndex: 1000000,
-    filter: theme.palette.type === 'light' ? undefined : 'invert(100%)',
-    pointerEvents: 'none' as 'none',
+    filter: theme.palette.mode === 'light' ? undefined : 'invert(100%)',
+    pointerEvents: 'none' as const,
   },
 })
 

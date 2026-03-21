@@ -1,3 +1,7 @@
+import { Dispatch } from 'redux'
+import * as path from 'path'
+import { Subscription } from 'mqtt-explorer-backend/src/DataSource/MqttSource'
+import { makeOpenDialogRpc } from '../../../events/OpenDialogRequest'
 import { AppState } from '../reducers'
 import { clearLegacyConnectionOptions, loadLegacyConnectionOptions } from '../model/LegacyConnectionSettings'
 import {
@@ -7,15 +11,10 @@ import {
   CertificateParameters,
 } from '../model/ConnectionOptions'
 import { default as persistentStorage, StorageIdentifier } from '../utils/PersistentStorage'
-import { Dispatch } from 'redux'
 import { showError } from './Global'
-import { promises as fsPromise } from 'fs'
-import * as path from 'path'
 import { ActionTypes, Action } from '../reducers/ConnectionManager'
-import { Subscription } from '../../../backend/src/DataSource/MqttSource'
 import { connectionsMigrator } from './migrations/Connection'
-import { rendererRpc } from '../../../events'
-import { makeOpenDialogRpc } from '../../../events/OpenDialogRequest'
+import { rendererRpc, readFromFile } from '../eventBus'
 
 export interface ConnectionDictionary {
   [s: string]: ConnectionOptions
@@ -47,25 +46,26 @@ export const loadConnectionSettings = () => async (dispatch: Dispatch<any>, getS
   const firstKey = Object.keys(connections)[0]
   if (firstKey) {
     dispatch(selectConnection(firstKey))
+  } else {
+    // No connections exist - create a default one
+    dispatch(createConnection())
   }
 }
 
 export type CertificateTypes = 'selfSignedCertificate' | 'clientCertificate' | 'clientKey'
-export const selectCertificate = (type: CertificateTypes, connectionId: string) => async (
-  dispatch: Dispatch<any>,
-  getState: () => AppState
-) => {
-  try {
-    const certificate = await openCertificate()
-    dispatch(
-      updateConnection(connectionId, {
-        [type]: certificate,
-      })
-    )
-  } catch (error) {
-    dispatch(showError(error))
+export const selectCertificate =
+  (type: CertificateTypes, connectionId: string) => async (dispatch: Dispatch<any>, getState: () => AppState) => {
+    try {
+      const certificate = await openCertificate()
+      dispatch(
+        updateConnection(connectionId, {
+          [type]: certificate,
+        })
+      )
+    } catch (error) {
+      dispatch(showError(error))
+    }
   }
-}
 
 async function openCertificate(): Promise<CertificateParameters> {
   const rejectReasons = {
@@ -83,7 +83,7 @@ async function openCertificate(): Promise<CertificateParameters> {
     throw rejectReasons.noCertificateSelected
   }
 
-  const data = await fsPromise.readFile(selectedFile)
+  const data = await rendererRpc.call(readFromFile, { filePath: selectedFile })
   if (data.length > 16_384 || data.length < 64) {
     throw rejectReasons.certificateSizeDoesNotMatch
   }

@@ -1,79 +1,68 @@
 import * as os from 'os'
-import * as webdriverio from 'webdriverio'
+import { ElectronApplication, _electron as electron } from 'playwright'
+
 import mockMqtt, { stopUpdates as stopMqttUpdates } from './mock-mqtt'
 import { ClassNameMapping, countInstancesOf, createFakeMousePointer, getHeapDump, setFast, sleep } from './util'
 import { clearSearch, searchTree } from './scenarios/searchTree'
 import { connectTo } from './scenarios/connect'
 import { reconnect } from './scenarios/reconnect'
 
-process.on('unhandledRejection', (error: Error | any) => {
+process.on('unhandledRejection' as any, (error: Error | any) => {
   console.error('unhandledRejection', error.message, error.stack)
   process.exit(1)
 })
 
 const runningUiTestOnCi = os.platform() === 'darwin' ? [] : ['--runningUiTestOnCi']
 
-const options = {
-  host: '127.0.0.1', // Use localhost as chrome driver server
-  port: 9515, // "9515" is the port opened by chrome driver.
-  capabilities: {
-    browserName: 'chrome',
-    'goog:chromeOptions': {
-      binary: `${__dirname}/../../../node_modules/.bin/electron`,
-      args: [
-        `--app=${__dirname}/../../..`,
-        '--force-device-scale-factor=1',
-        '--no-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-extensions',
-      ].concat(runningUiTestOnCi),
-      windowTypes: ['app', 'webview'],
-    },
-  },
-}
-
 async function doStuff() {
-  console.log('Waiting for MQTT Broker on port 1880 (no auth)')
+  const brokerHost = process.env.TESTS_MQTT_BROKER_HOST || '127.0.0.1'
+  const brokerPort = process.env.TESTS_MQTT_BROKER_PORT || '1883'
+  console.log(`Waiting for MQTT Broker at ${brokerHost}:${brokerPort} (no auth)`)
   await mockMqtt()
-  console.log('start webdriver')
 
-  const browser = await webdriverio.remote(options)
+  console.log('Starting playwright/electron')
+
+  // Launch Electron app.
+  const electronApp: ElectronApplication = await electron.launch({
+    args: [`${__dirname}/../../..`, ...runningUiTestOnCi],
+  })
+
+  console.log('Playwright started')
+  // Get the first window that the app opens, wait if necessary.
+  const browser = await electronApp.firstWindow({ timeout: 3000 })
+  // Print the title.
+  console.log(await browser.title())
+  // Capture a screenshot.
+  await browser.screenshot({ path: 'intro.png' })
+  // Direct Electron console to Node terminal.
+  browser.on('console', console.log)
+
   setFast()
   await createFakeMousePointer(browser)
-
   // Wait for Username input to be visible
-  await browser.$('//label[contains(text(), "Username")]/..//input')
-  await connectTo('127.0.0.1', browser)
+  await browser.locator('//label[contains(text(), "Username")]/..//input')
+  await connectTo(brokerHost, browser)
   stopMqttUpdates()
   await sleep(1000, true)
-
   const heapDump = await getHeapDump(browser)
   const initialTreeOccurrences = await countInstancesOf(heapDump, ClassNameMapping.Tree)
   const initialNodeOccurrences = await countInstancesOf(heapDump, ClassNameMapping.TreeNode)
   console.log(initialTreeOccurrences, initialNodeOccurrences)
-
   await doX(3, async () => {
     await reconnect(browser)
   })
-
   await sleep(1000, true)
-
   await doX(15, async () => {
     await searchTree('temp', browser)
     await reconnect(browser)
   })
-
   await searchTree('ab', browser)
   await clearSearch(browser)
-
   await searchTree('temp', browser)
   await clearSearch(browser)
-
   await sleep(1000, true)
-
   await waitForGarbageCollectorToDetermineLeak(browser, initialTreeOccurrences, initialNodeOccurrences)
 }
-
 async function waitForGarbageCollectorToDetermineLeak(
   browser: any,
   initialTreeOccurrences: number,
@@ -90,7 +79,6 @@ async function waitForGarbageCollectorToDetermineLeak(
     const heapDump = await getHeapDump(browser)
     const currentTreeOccurrences = await countInstancesOf(heapDump, ClassNameMapping.Tree)
     const currentNodeOccurrences = await countInstancesOf(heapDump, ClassNameMapping.TreeNode)
-
     // Temporary "leaks" are expected due to React Fibers memoization
     if (
       Math.abs(initialTreeOccurrences - currentTreeOccurrences) > 1 ||
@@ -107,21 +95,17 @@ async function waitForGarbageCollectorToDetermineLeak(
     } else {
       leak = false
     }
-
     const treeDelta = lastTreeOccurrences >= 0 ? currentTreeOccurrences - lastTreeOccurrences : -1
     const nodeDelta = lastTreeOccurrences >= 0 ? currentNodeOccurrences - lastNodeOccurrences : -1
     delta = treeDelta + nodeDelta
-
     lastTreeOccurrences = currentTreeOccurrences
     lastNodeOccurrences = currentNodeOccurrences
   }
-
   if (leak) {
     console.error('leak')
     process.exit(100)
   }
 }
-
 async function doX(x: number, action: () => Promise<any>) {
   for (let i = 0; i < x; i += 1) {
     await action()

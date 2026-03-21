@@ -1,58 +1,61 @@
+import { Dispatch } from 'redux'
 import * as q from '../../../backend/src/Model'
 import { AppState } from '../reducers'
-import { Dispatch } from 'redux'
 import { selectTopic } from './Tree'
 import { SettingsState } from '../reducers/Settings'
 import { sortedNodes } from '../sortedNodes'
 import { TopicViewModel } from '../model/TopicViewModel'
 
-export const moveSelectionUpOrDownwards = (direction: 'next' | 'previous') => (
-  dispatch: Dispatch<any>,
-  getState: () => AppState
-): any => {
-  const state = getState()
-  const selected = state.tree.get('selectedTopic')
-  const tree = state.tree.get('tree')
+export const moveSelectionUpOrDownwards =
+  (direction: 'next' | 'previous') =>
+  (dispatch: Dispatch<any>, getState: () => AppState): any => {
+    const state = getState()
+    const selected = state.tree.get('selectedTopic')
+    const tree = state.tree.get('tree')
 
-  if (!selected || !tree) {
-    if (tree) {
-      dispatch(selectTopic(tree))
+    if (!selected || !tree) {
+      if (tree) {
+        dispatch(selectTopic(tree))
+      }
+      return
     }
-    return
-  }
-  const nextTreeNode = nextVisibleElementInTree(state.settings, tree, selected, direction)
-  if (nextTreeNode && nextTreeNode.viewModel) {
-    dispatch(selectTopic(nextTreeNode))
-  }
-}
-
-export const moveInward = () => (dispatch: Dispatch<any>, getState: () => AppState): any => {
-  const state = getState()
-  const selected = state.tree.get('selectedTopic')
-  if (!selected || !selected.viewModel) {
-    return
+    const nextTreeNode = nextVisibleElementInTree(state.settings, tree, selected, direction)
+    if (nextTreeNode && nextTreeNode.viewModel) {
+      dispatch(selectTopic(nextTreeNode))
+    }
   }
 
-  if (!selected.viewModel.isExpanded() && selected.edgeCount() > 0) {
-    selected.viewModel.setExpanded(true, true)
-  } else {
-    dispatch(moveSelectionUpOrDownwards('next'))
-  }
-}
+export const moveInward =
+  () =>
+  (dispatch: Dispatch<any>, getState: () => AppState): any => {
+    const state = getState()
+    const selected = state.tree.get('selectedTopic')
+    if (!selected || !selected.viewModel) {
+      return
+    }
 
-export const moveOutward = () => (dispatch: Dispatch<any>, getState: () => AppState): any => {
-  const state = getState()
-  const selected = state.tree.get('selectedTopic')
-  if (!selected || !selected.viewModel) {
-    return
+    if (!selected.viewModel.isExpanded() && selected.edgeCount() > 0) {
+      selected.viewModel.setExpanded(true, true)
+    } else {
+      dispatch(moveSelectionUpOrDownwards('next'))
+    }
   }
 
-  if (selected.viewModel.isExpanded() && selected.edgeCount() > 0) {
-    selected.viewModel.setExpanded(false, true)
-  } else {
-    dispatch(moveSelectionUpOrDownwards('previous'))
+export const moveOutward =
+  () =>
+  (dispatch: Dispatch<any>, getState: () => AppState): any => {
+    const state = getState()
+    const selected = state.tree.get('selectedTopic')
+    if (!selected || !selected.viewModel) {
+      return
+    }
+
+    if (selected.viewModel.isExpanded() && selected.edgeCount() > 0) {
+      selected.viewModel.setExpanded(false, true)
+    } else {
+      dispatch(moveSelectionUpOrDownwards('previous'))
+    }
   }
-}
 
 function isTreeNodeVisible(treeNode: q.TreeNode<any>) {
   return Boolean(treeNode.viewModel)
@@ -66,9 +69,8 @@ function nextVisibleElementInTree(
 ): q.TreeNode<TopicViewModel> | undefined {
   if (direction === 'next') {
     return findNextNodeDownward(settings, node)
-  } else {
-    return findNextNodeUpward(settings, node)
   }
+  return findNextNodeUpward(settings, node)
 }
 
 /** Not very efficient but easy to implement, complexity should not be an issue here  */
@@ -89,9 +91,8 @@ function findNextNodeUpward(
   const upwardNeighbor = neighborNodes[nodeIdx - 1]
   if (upwardNeighbor) {
     return lastVisibleChild(settings, upwardNeighbor)
-  } else {
-    return findNextNodeUpward(settings, parent)
   }
+  return findNextNodeUpward(settings, parent)
 }
 
 function lastVisibleChild(settings: SettingsState, treeNode: q.TreeNode<TopicViewModel>): q.TreeNode<TopicViewModel> {
@@ -129,7 +130,6 @@ function findNextNodeDownwardNeighbor(
   const downwardNeighbor = neighborNodes[nodeIdx + 1]
   if (downwardNeighbor) {
     return downwardNeighbor
-  } else {
-    return findNextNodeDownwardNeighbor(settings, parent)
   }
+  return findNextNodeDownwardNeighbor(settings, parent)
 }

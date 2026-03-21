@@ -1,19 +1,18 @@
-import * as FileAsync from 'lowdb/adapters/FileAsync'
-import * as fs from 'fs-extra'
-import * as lowdb from 'lowdb'
-import * as path from 'path'
-import { backendRpc } from '../../events'
-import {
-  storageClearEvent,
-  storageLoadEvent,
-  storageStoreEvent,
-} from '../../events/StorageEvents'
+import FileAsync from 'lowdb/adapters/FileAsync'
+import fs from 'fs-extra'
+import lowdb from 'lowdb'
+import path from 'path'
+import { Rpc } from '../../events/EventSystem/Rpc'
+import { storageClearEvent, storageLoadEvent, storageStoreEvent } from '../../events/StorageEvents'
 
 export default class ConfigStorage {
   private file: string
   private database: any
-  constructor(file: string) {
+  private rpc: Rpc
+
+  constructor(file: string, rpc: Rpc) {
     this.file = file
+    this.rpc = rpc
   }
 
   private async getDb() {
@@ -30,13 +29,13 @@ export default class ConfigStorage {
   }
 
   public async init() {
-    backendRpc.on(storageStoreEvent, async event => {
+    this.rpc.on(storageStoreEvent, async event => {
       const db = await this.getDb()
       await db.set(event.store, event.data).write()
       return
     })
 
-    backendRpc.on(storageLoadEvent, async event => {
+    this.rpc.on(storageLoadEvent, async event => {
       const db = await this.getDb()
       const data = await db.get(event.store).value()
       return {
@@ -45,7 +44,7 @@ export default class ConfigStorage {
       }
     })
 
-    backendRpc.on(storageClearEvent, async event => {
+    this.rpc.on(storageClearEvent, async event => {
       const db = await this.getDb()
       const keys = await db.keys().value()
       for (const key of keys) {

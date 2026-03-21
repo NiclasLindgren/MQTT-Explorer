@@ -5,14 +5,32 @@ import * as dotProp from 'dot-prop'
 
 const linuxAppImage: builder.CliOptions = {
   x64: true,
-  ia32: true,
+  ia32: false,
   armv7l: true,
-  arm64: false,
+  arm64: true,
   projectDir: './build/clean',
   publish: 'always',
 }
 
 const linuxSnap: builder.CliOptions = {
+  x64: true,
+  ia32: false,
+  armv7l: false, // not supported to build on x64
+  arm64: false, // not supported to build on x64
+  projectDir: './build/clean',
+  publish: 'always',
+}
+
+const linuxDeb: builder.CliOptions = {
+  x64: true,
+  ia32: false,
+  armv7l: true,
+  arm64: true,
+  projectDir: './build/clean',
+  publish: 'always',
+}
+
+const winPortable: builder.CliOptions = {
   x64: true,
   ia32: false,
   armv7l: false,
@@ -21,18 +39,9 @@ const linuxSnap: builder.CliOptions = {
   publish: 'always',
 }
 
-const winPortable: builder.CliOptions = {
-  x64: true,
-  ia32: true,
-  armv7l: false,
-  arm64: false,
-  projectDir: './build/clean',
-  publish: 'always',
-}
-
 const winNsis: builder.CliOptions = {
   x64: true,
-  ia32: true,
+  ia32: false,
   armv7l: false,
   arm64: false,
   projectDir: './build/clean',
@@ -41,7 +50,7 @@ const winNsis: builder.CliOptions = {
 
 const winAppx: builder.CliOptions = {
   x64: true,
-  ia32: true,
+  ia32: false,
   armv7l: false,
   arm64: false,
   projectDir: './build/clean',
@@ -50,9 +59,9 @@ const winAppx: builder.CliOptions = {
 
 const mac: builder.CliOptions = {
   x64: true,
-  ia32: true,
+  ia32: false,
   armv7l: false,
-  arm64: false,
+  arm64: true,
   projectDir: './build/clean',
   publish: 'always',
 }
@@ -69,11 +78,12 @@ async function executeBuild() {
     case 'linux':
       await buildWithOptions(linuxAppImage, { platform: 'linux', package: 'AppImage' })
       await buildWithOptions(linuxSnap, { platform: 'linux', package: 'snap' })
+      await buildWithOptions(linuxDeb, { platform: 'linux', package: 'deb' })
       break
     case 'mac':
       await buildWithOptions(mac, { platform: 'mac', package: 'dmg' })
-      await buildWithOptions(mac, { platform: 'mac', package: 'mas' })
-      await buildWithOptions(mac, { platform: 'mac', package: 'zip' })
+      // await buildWithOptions(mac, { platform: 'mac', package: 'mas' })
+      // await buildWithOptions(mac, { platform: 'mac', package: 'zip' })
       break
     default:
       await buildWithOptions({ ...mac, projectDir: '' }, { platform: 'mac', package: 'mas-dev' })
@@ -107,6 +117,18 @@ async function buildWithOptions(options: builder.CliOptions, buildInfo: BuildInf
         ? 'res/MQTT_Explorer_Store_Distribution_Profile.provisionprofile'
         : 'res/MQTTExplorerdmg.provisionprofile'
     dotProp.set(packageJson, 'build.mac.provisioningProfile', provisioningProfile)
+
+    // Set different entitlements for MAS vs DMG builds
+    if (buildInfo.package === 'mas') {
+      // MAS builds use the same sandboxed entitlements for parent and child processes
+      dotProp.set(packageJson, 'build.mac.entitlements', 'res/entitlements.mas.plist')
+      dotProp.set(packageJson, 'build.mac.entitlementsInherit', 'res/entitlements.mas.plist')
+    } else {
+      // DMG builds use different entitlements for notarization
+      // Parent app has network permissions, child processes have minimal permissions
+      dotProp.set(packageJson, 'build.mac.entitlements', 'res/entitlements.mac.plist')
+      dotProp.set(packageJson, 'build.mac.entitlementsInherit', 'res/entitlements.mac.inherit.plist')
+    }
   }
 
   try {

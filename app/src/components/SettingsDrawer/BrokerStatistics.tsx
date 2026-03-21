@@ -1,13 +1,15 @@
-import * as q from '../../../../backend/src/Model'
 import React, { useMemo } from 'react'
-import { AppState } from '../../reducers'
-import { Base64Message } from '../../../../backend/src/Model/Base64Message'
 import { connect } from 'react-redux'
-import { Theme, withStyles } from '@material-ui/core/styles'
+import { Theme } from '@mui/material/styles'
+import { withStyles } from '@mui/styles'
+import { Typography } from '@mui/material'
+import * as q from '../../../../backend/src/Model'
+import { Base64Message } from '../../../../backend/src/Model/Base64Message'
 import { TopicViewModel } from '../../model/TopicViewModel'
-import { Typography } from '@material-ui/core'
+import { AppState } from '../../reducers'
 import { usePollingToFetchTreeNode } from '../helper/usePollingToFetchTreeNode'
 import { useUpdateComponentWhenNodeUpdates } from '../helper/useUpdateComponentWhenNodeUpdates'
+
 const abbreviate = require('number-abbreviate')
 
 interface Stats {
@@ -19,7 +21,7 @@ const styles = (theme: Theme) => ({
   container: {
     width: '100%',
     height: '224px',
-    backgroundColor: theme.palette.type === 'dark' ? 'rebeccapurple' : '#ebebeb',
+    backgroundColor: theme.palette.mode === 'dark' ? 'rebeccapurple' : '#ebebeb',
     marginBottom: 0,
     padding: '8px',
   },
@@ -36,7 +38,7 @@ function BrokerStatistics(props: Props) {
   useUpdateComponentWhenNodeUpdates(sysTopic)
 
   return useMemo(() => {
-    if (!Boolean(sysTopic)) {
+    if (!sysTopic) {
       return null
     }
 
@@ -95,11 +97,9 @@ function BrokerStatistics(props: Props) {
   }, [sysTopic && sysTopic.lastUpdate, props.classes])
 }
 
-const mapStateToProps = (state: AppState) => {
-  return {
-    tree: state.connection.tree,
-  }
-}
+const mapStateToProps = (state: AppState) => ({
+  tree: state.connection.tree,
+})
 
 export default withStyles(styles)(connect(mapStateToProps)(BrokerStatistics))
 
@@ -123,7 +123,7 @@ function renderStat(tree: q.Tree<TopicViewModel>, stat: Stats) {
     return null
   }
 
-  const str = node.message.payload ? Base64Message.toUnicodeString(node.message.payload) : ''
+  const str = node.message.payload ? node.message.payload.toUnicodeString() : ''
   let value = node.message && node.message.payload ? parseFloat(str) : NaN
   value = !isNaN(value) ? abbreviate(value) : str
 

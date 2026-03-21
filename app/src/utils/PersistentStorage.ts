@@ -1,10 +1,5 @@
-import { rendererRpc } from '../../../events'
-
-import {
-  storageStoreEvent,
-  storageLoadEvent,
-  storageClearEvent,
-} from '../../../events/StorageEvents'
+import { storageStoreEvent, storageLoadEvent, storageClearEvent } from '../../../events/StorageEvents'
+import { rendererRpc } from '../eventBus'
 
 export interface StorageIdentifier<Model> {
   id: string
@@ -25,9 +20,13 @@ class RemoteStorage implements PersistentStorage {
   }
 
   public async load<Model>(identifier: StorageIdentifier<Model>): Promise<Model | undefined> {
-    const result = await rendererRpc.call(storageLoadEvent, {
-      store: identifier.id,
-    }, 10000)
+    const result = await rendererRpc.call(
+      storageLoadEvent,
+      {
+        store: identifier.id,
+      },
+      10000
+    )
 
     return (result as any).data
   }

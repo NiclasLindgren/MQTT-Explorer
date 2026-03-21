@@ -1,10 +1,11 @@
 import React from 'react'
-import * as q from '../../../../../backend/src/Model'
-import Button from '@material-ui/core/Button'
-import { withStyles, Theme } from '@material-ui/core/styles'
-import { treeActions } from '../../../actions'
+import Button from '@mui/material/Button'
+import { withStyles } from '@mui/styles'
+import { Theme } from '@mui/material/styles'
 import { bindActionCreators } from 'redux'
 import { connect } from 'react-redux'
+import * as q from '../../../../../backend/src/Model'
+import { treeActions } from '../../../actions'
 import { TopicViewModel } from '../../../model/TopicViewModel'
 
 interface Props {
@@ -17,7 +18,7 @@ interface Props {
 
 const styles = (theme: Theme) => ({
   button: {
-    textTransform: 'none' as 'none',
+    textTransform: 'none' as const,
     padding: '3px 5px 3px 5px',
     minWidth: '30px',
   },
@@ -39,8 +40,8 @@ class Topic extends React.PureComponent<Props, {}> {
         <Button
           onClick={() => this.props.actions.selectTopic(edge!.target)}
           size="small"
-          variant={theme.palette.type === 'light' ? 'contained' : undefined}
-          color={theme.palette.type === 'light' ? 'primary' : 'secondary'}
+          variant={theme.palette.mode === 'light' ? 'contained' : undefined}
+          color={theme.palette.mode === 'light' ? 'primary' : 'secondary'}
           className={this.props.classes.button}
           key={edge!.hash()}
         >
@@ -60,10 +61,8 @@ class Topic extends React.PureComponent<Props, {}> {
   }
 }
 
-const mapDispatchToProps = (dispatch: any) => {
-  return {
-    actions: bindActionCreators(treeActions, dispatch),
-  }
-}
+const mapDispatchToProps = (dispatch: any) => ({
+  actions: bindActionCreators(treeActions, dispatch),
+})
 
-export default connect(null, mapDispatchToProps)(withStyles(styles, { withTheme: true })(Topic))
+export default connect(null, mapDispatchToProps)(withStyles(styles, { withTheme: true })(Topic) as any)

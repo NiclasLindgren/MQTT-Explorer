@@ -1,15 +1,16 @@
 import React, { memo } from 'react'
-import { fade } from '@material-ui/core/styles'
-import { Fade, Grow, Paper, Popper, Theme, Typography, withTheme } from '@material-ui/core'
+import { alpha as fade, useTheme } from '@mui/material/styles'
+import { Fade, Grow, Paper, Popper, Typography } from '@mui/material'
 import { Tooltip } from './Model'
 
-function TooltipComponent(props: { tooltip?: Tooltip; theme: Theme }) {
+function TooltipComponent(props: { tooltip?: Tooltip }) {
+  const theme = useTheme()
   const { tooltip } = props
   return (
     <Popper
-      style={Boolean(tooltip) ? { transition: 'all 0.1s ease-out' } : undefined}
+      style={tooltip ? { transition: 'all 0.1s ease-out' } : undefined}
       open={Boolean(tooltip)}
-      transition={true}
+      transition
       placement="top"
       anchorEl={tooltip && tooltip.element}
     >
@@ -26,9 +27,7 @@ function TooltipComponent(props: { tooltip?: Tooltip; theme: Theme }) {
                 padding: '4px',
                 marginTop: '-12px',
                 backgroundColor: fade(
-                  props.theme.palette.type === 'light'
-                    ? props.theme.palette.background.paper
-                    : props.theme.palette.background.default,
+                  theme.palette.mode === 'light' ? theme.palette.background.paper : theme.palette.background.default,
                   0.7
                 ),
               }}
@@ -56,4 +55,4 @@ function TooltipComponent(props: { tooltip?: Tooltip; theme: Theme }) {
   )
 }
 
-export default withTheme(memo(TooltipComponent))
+export default memo(TooltipComponent)

@@ -1,7 +1,7 @@
 import React from 'react'
-import ExpandMore from '@material-ui/icons/ExpandMore'
-import { ExpansionPanel, ExpansionPanelDetails, ExpansionPanelSummary, Typography, Theme } from '@material-ui/core'
-import { withStyles } from '@material-ui/styles'
+import ExpandMore from '@mui/icons-material/ExpandMore'
+import { Accordion, AccordionDetails, AccordionSummary, Typography, Theme } from '@mui/material'
+import { withStyles } from '@mui/styles'
 
 const styles = (theme: Theme) => ({
   summary: { minHeight: '0' },
@@ -12,22 +12,23 @@ const styles = (theme: Theme) => ({
   },
 })
 
-const Panel = (props: {
+function Panel(props: {
   classes: any
   children: [React.ReactElement, React.ReactElement]
   disabled?: boolean
   detailsHidden?: boolean
-}) => {
+}) {
   return (
-    <ExpansionPanel defaultExpanded={true} disabled={props.disabled}>
-      <ExpansionPanelSummary expandIcon={<ExpandMore />} className={props.classes.summary}>
+    <Accordion defaultExpanded disabled={props.disabled}>
+      <AccordionSummary expandIcon={<ExpandMore />} className={props.classes.summary}>
         <Typography className={props.classes.heading}>{props.children[0]}</Typography>
-      </ExpansionPanelSummary>
+      </AccordionSummary>
       {props.detailsHidden ? null : (
-        <ExpansionPanelDetails className={props.classes.detail}>{props.children[1]}</ExpansionPanelDetails>
+        <AccordionDetails className={props.classes.detail}>{props.children[1]}</AccordionDetails>
       )}
-    </ExpansionPanel>
+    </Accordion>
   )
 }
 
+// @ts-ignore
 export default withStyles(styles)(Panel)

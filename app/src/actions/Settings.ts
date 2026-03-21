@@ -1,12 +1,12 @@
+import { batchActions } from 'redux-batched-actions'
+import { Dispatch } from 'redux'
 import * as q from '../../../backend/src/Model'
-import { ActionTypes, SettingsStateModel, TopicOrder } from '../reducers/Settings'
+import { Base64Message } from '../../../backend/src/Model/Base64Message'
+import { ActionTypes, SettingsStateModel, TopicOrder, ValueRendererDisplayMode } from '../reducers/Settings'
 import { AppState } from '../reducers'
 import { autoExpandLimitSet } from '../components/SettingsDrawer/Settings'
-import { Base64Message } from '../../../backend/src/Model/Base64Message'
-import { batchActions } from 'redux-batched-actions'
 import { default as persistentStorage, StorageIdentifier } from '../utils/PersistentStorage'
-import { Dispatch } from 'redux'
-import { globalActions } from './'
+import { globalActions } from '.'
 import { showError } from './Global'
 import { showTree } from './Tree'
 import { TopicViewModel } from '../model/TopicViewModel'
@@ -43,12 +43,14 @@ export const storeSettings = () => async (dispatch: Dispatch<any>, getState: () 
   }
 }
 
-export const setAutoExpandLimit = (autoExpandLimit: number = 0) => (dispatch: Dispatch<any>) => {
-  dispatch({
-    autoExpandLimit,
-    type: ActionTypes.SETTINGS_SET_AUTO_EXPAND_LIMIT,
-  })
-}
+export const setAutoExpandLimit =
+  (autoExpandLimit: number = 0) =>
+  (dispatch: Dispatch<any>) => {
+    dispatch({
+      autoExpandLimit,
+      type: ActionTypes.SETTINGS_SET_AUTO_EXPAND_LIMIT,
+    })
+  }
 
 export const setTimeLocale = (timeLocale: string) => (dispatch: Dispatch<any>) => {
   dispatch({
@@ -66,13 +68,14 @@ export const selectTopicWithMouseOver = (doSelect: boolean) => (dispatch: Dispat
   dispatch(storeSettings())
 }
 
-export const setValueDisplayMode = (valueRendererDisplayMode: 'diff' | 'raw') => (dispatch: Dispatch<any>) => {
-  dispatch({
-    valueRendererDisplayMode,
-    type: ActionTypes.SETTINGS_SET_VALUE_RENDERER_DISPLAY_MODE,
-  })
-  dispatch(storeSettings())
-}
+export const setValueDisplayMode =
+  (valueRendererDisplayMode: ValueRendererDisplayMode) => (dispatch: Dispatch<any>) => {
+    dispatch({
+      valueRendererDisplayMode,
+      type: ActionTypes.SETTINGS_SET_VALUE_RENDERER_DISPLAY_MODE,
+    })
+    dispatch(storeSettings())
+  }
 
 export const toggleHighlightTopicUpdates = () => (dispatch: Dispatch<any>) => {
   dispatch({
@@ -81,13 +84,15 @@ export const toggleHighlightTopicUpdates = () => (dispatch: Dispatch<any>) => {
   dispatch(storeSettings())
 }
 
-export const setTopicOrder = (topicOrder: TopicOrder = TopicOrder.none) => (dispatch: Dispatch<any>) => {
-  dispatch({
-    topicOrder,
-    type: ActionTypes.SETTINGS_SET_TOPIC_ORDER,
-  })
-  dispatch(storeSettings())
-}
+export const setTopicOrder =
+  (topicOrder: TopicOrder = TopicOrder.none) =>
+  (dispatch: Dispatch<any>) => {
+    dispatch({
+      topicOrder,
+      type: ActionTypes.SETTINGS_SET_TOPIC_ORDER,
+    })
+    dispatch(storeSettings())
+  }
 
 export const filterTopics = (filterStr: string) => (dispatch: Dispatch<any>, getState: () => AppState) => {
   const { tree } = getState().connection
@@ -113,7 +118,7 @@ export const filterTopics = (filterStr: string) => (dispatch: Dispatch<any>, get
     const messageMatches =
       node.message &&
       node.message.payload &&
-      Base64Message.toUnicodeString(node.message.payload).toLowerCase().indexOf(filterStr) !== -1
+      node.message.payload.toUnicodeString().toLowerCase().indexOf(filterStr) !== -1
 
     return Boolean(messageMatches)
   }

@@ -1,13 +1,14 @@
+import React, { useState, useCallback, memo, useRef } from 'react'
+import { bindActionCreators } from 'redux'
+import { connect } from 'react-redux'
+import { Paper } from '@mui/material'
 import * as q from '../../../../backend/src/Model'
 import ChartTitle from './ChartTitle'
-import React, { useState, useCallback, memo, useRef } from 'react'
 import TopicPlot from '../TopicPlot'
-import { bindActionCreators } from 'redux'
 import { ChartActions } from './ChartActions'
 import { chartActions } from '../../actions'
 import { ChartParameters } from '../../reducers/Charts'
-import { connect } from 'react-redux'
-import { Paper } from '@material-ui/core'
+
 const throttle = require('lodash.throttle')
 
 class ClearableMessageBuffer extends q.RingBuffer<q.Message> {
@@ -114,6 +115,7 @@ function TopicChart(props: Props) {
         </div>
       </div>
       <TopicPlot
+        node={props.treeNode ? props.treeNode : undefined}
         color={props.parameters.color}
         interpolation={props.parameters.interpolation}
         timeInterval={props.parameters.timeRange ? props.parameters.timeRange.until : undefined}
@@ -125,12 +127,10 @@ function TopicChart(props: Props) {
   )
 }
 
-const mapDispatchToProps = (dispatch: any) => {
-  return {
-    actions: {
-      chart: bindActionCreators(chartActions, dispatch),
-    },
-  }
-}
+const mapDispatchToProps = (dispatch: any) => ({
+  actions: {
+    chart: bindActionCreators(chartActions, dispatch),
+  },
+})
 
 export default connect(undefined, mapDispatchToProps)(memo(TopicChart))

@@ -1,12 +1,13 @@
 import React, { useCallback, useState, useRef } from 'react'
-import ClearAdornment from '../helper/ClearAdornment'
-import Search from '@material-ui/icons/Search'
-import { AppState } from '../../reducers'
+import Search from '@mui/icons-material/Search'
 import { bindActionCreators } from 'redux'
 import { connect } from 'react-redux'
-import { InputBase } from '@material-ui/core'
+import { InputBase } from '@mui/material'
+import { alpha as fade, Theme } from '@mui/material/styles'
+import { withStyles } from '@mui/styles'
 import { settingsActions } from '../../actions'
-import { fade, Theme, withStyles } from '@material-ui/core/styles'
+import { AppState } from '../../reducers'
+import ClearAdornment from '../helper/ClearAdornment'
 import { useGlobalKeyEventHandler } from '../../effects/useGlobalKeyEventHandler'
 import { KeyCodes } from '../../utils/KeyCodes'
 
@@ -22,7 +23,15 @@ function SearchBar(props: {
 
   const [hasFocus, setHasFocus] = useState(false)
   const inputRef = useRef<HTMLInputElement>()
-  const onFocus = useCallback(() => setHasFocus(true), [])
+  const onFocus = useCallback(() => {
+    setHasFocus(true)
+    // On mobile, switch to Topics tab when search is focused
+    if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+      if ((window as any).switchToTopicsTab) {
+        ;(window as any).switchToTopicsTab()
+      }
+    }
+  }, [])
   const onBlur = useCallback(() => setHasFocus(false), [])
 
   const clearFilter = useCallback(() => {
@@ -56,8 +65,8 @@ function SearchBar(props: {
   })
 
   return (
-    <div className={classes.search}>
-      <div className={classes.searchIcon}>
+    <div className={classes.search} role="search">
+      <div className={classes.searchIcon} aria-hidden="true">
         <Search />
       </div>
       <InputBase
@@ -66,6 +75,7 @@ function SearchBar(props: {
           onFocus,
           onBlur,
           ref: inputRef,
+          'aria-label': 'Search topics',
         }}
         onChange={onFilterChange}
         placeholder="Search…"
@@ -80,24 +90,20 @@ function SearchBar(props: {
   )
 }
 
-const mapStateToProps = (state: AppState) => {
-  return {
-    topicFilter: state.settings.get('topicFilter'),
-    hasConnection: Boolean(state.connection.connectionId),
-  }
-}
+const mapStateToProps = (state: AppState) => ({
+  topicFilter: state.settings.get('topicFilter'),
+  hasConnection: Boolean(state.connection.connectionId),
+})
 
-const mapDispatchToProps = (dispatch: any) => {
-  return {
-    actions: {
-      settings: bindActionCreators(settingsActions, dispatch),
-    },
-  }
-}
+const mapDispatchToProps = (dispatch: any) => ({
+  actions: {
+    settings: bindActionCreators(settingsActions, dispatch),
+  },
+})
 
 const styles = (theme: Theme) => ({
   search: {
-    position: 'relative' as 'relative',
+    position: 'relative' as const,
     borderRadius: theme.shape.borderRadius,
     backgroundColor: fade(theme.palette.common.white, 0.15),
     '&:hover': {
@@ -112,34 +118,55 @@ const styles = (theme: Theme) => ({
       maxWidth: '30%',
 
       marginLeft: theme.spacing(4),
-      width: 'auto' as 'auto',
+      width: 'auto' as const,
     },
     [theme.breakpoints.up(750)]: {
       marginLeft: theme.spacing(4),
-      width: 'auto' as 'auto',
+      width: 'auto' as const,
     },
   },
   searchIcon: {
     width: theme.spacing(6),
     height: '100%',
-    position: 'absolute' as 'absolute',
-    pointerEvents: 'none' as 'none',
-    display: 'flex' as 'flex',
-    alignItems: 'center' as 'center',
-    justifyContent: 'center' as 'center',
+    position: 'absolute' as const,
+    pointerEvents: 'none' as const,
+    display: 'flex' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
   },
   inputRoot: {
-    color: 'inherit' as 'inherit',
+    color: `${theme.palette.common.white} !important`, // Ensure white text color with high specificity
     width: '100%',
+    '& input': {
+      color: `${theme.palette.common.white} !important`, // Target input element directly
+    },
   },
   inputInput: {
     paddingTop: theme.spacing(1),
     paddingRight: theme.spacing(1),
     paddingBottom: theme.spacing(1),
-    paddingLeft: theme.spacing(6),
+    paddingLeft: `${theme.spacing(6)} !important`, // Ensure padding is applied (48px)
     transition: theme.transitions.create('width'),
     width: '100%',
+    color: `${theme.palette.common.white} !important`, // High contrast white text with priority
+    fontSize: '16px', // Prevent iOS zoom on focus
+    '&::placeholder': {
+      color: `${fade(theme.palette.common.white, 0.7)} !important`, // Semi-transparent white placeholder
+      opacity: 1,
+    },
+    '&::-webkit-input-placeholder': {
+      color: `${fade(theme.palette.common.white, 0.7)} !important`,
+    },
+    '&::-moz-placeholder': {
+      color: `${fade(theme.palette.common.white, 0.7)} !important`,
+    },
+    // Improve mobile input handling
+    [theme.breakpoints.down('md')]: {
+      fontSize: '16px', // Prevent zoom
+      WebkitAppearance: 'none',
+      touchAction: 'manipulation',
+    },
   },
 })
 
-export default connect(mapStateToProps, mapDispatchToProps)(withStyles(styles)(SearchBar))
+export default connect(mapStateToProps, mapDispatchToProps)(withStyles(styles)(SearchBar) as any)
