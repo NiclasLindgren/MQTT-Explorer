@@ -19,10 +19,10 @@ interface Props {
 
 const style = (theme: Theme) => {
   const icon = {
+    '&.MuiSvgIcon-root': {
+      fontSize: '16px',
+    },
     verticalAlign: 'top',
-    width: '12px',
-    height: '12px',
-    marginTop: '2px',
     borderRadius: '50%',
   }
 
@@ -30,10 +30,7 @@ const style = (theme: Theme) => {
     icon,
     iconButton: {
       ...icon,
-      marginTop: '0px',
-      width: '16px',
-      height: '16px',
-      padding: '2px',
+      padding: '0px',
       '&:hover': {
         color: theme.palette.primary.contrastText,
         backgroundColor: theme.palette.primary.main,
@@ -43,6 +40,7 @@ const style = (theme: Theme) => {
       textAlign: 'right' as const,
       paddingRight: theme.spacing(0.5),
       height: '16px',
+      lineHeight: '16px',
       width: '100%',
     },
   }

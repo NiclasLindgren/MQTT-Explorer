@@ -77,8 +77,8 @@ const styles = (theme: Theme) => ({
     paddingBottom: `${theme.spacing(0.5)}px`,
   },
   topicList: {
-    height: '196px',
-    overflowY: 'scroll' as const,
+    height: '100%',
+    overflowY: 'auto' as const,
     margin: `${theme.spacing(1)}px ${theme.spacing(1)}px 0 ${theme.spacing(1)}px`,
     backgroundColor: theme.palette.background.default,
     width: 'auto',

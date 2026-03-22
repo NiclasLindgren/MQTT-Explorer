@@ -7,6 +7,20 @@ export const shell = {
   },
 }
 
+export const ipcRenderer = {
+  on: () => {},
+  send: () => {},
+  removeListener: () => {},
+}
+
+export const ipcMain = {
+  on: () => {},
+  handle: () => {},
+  removeHandler: () => {},
+}
+
 export default {
   shell,
+  ipcRenderer,
+  ipcMain,
 }

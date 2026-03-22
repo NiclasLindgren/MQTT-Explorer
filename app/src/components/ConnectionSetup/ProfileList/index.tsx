@@ -1,7 +1,8 @@
-import React from 'react'
+import React, { useState, useMemo } from 'react'
 import { bindActionCreators } from 'redux'
 import { connect } from 'react-redux'
-import { List } from '@mui/material'
+import { List, TextField, InputAdornment } from '@mui/material'
+import Search from '@mui/icons-material/Search'
 import { Theme } from '@mui/material/styles'
 import { withStyles } from '@mui/styles'
 import ConnectionItem from './ConnectionItem'
@@ -23,13 +24,21 @@ interface Props {
 
 function ProfileList(props: Props) {
   const { actions, classes, connections, selected } = props
+  const [filter, setFilter] = useState('')
+
+  const filteredConnections = useMemo(() => {
+    const all = Object.values(connections)
+    if (!filter) return all
+    const lower = filter.toLowerCase()
+    return all.filter(c => c.name.toLowerCase().includes(lower) || c.host.toLowerCase().includes(lower))
+  }, [connections, filter])
 
   const selectConnection = (dir: 'next' | 'previous') => (event: KeyboardEvent) => {
     if (!selected) {
       return
     }
     const indexDirection = dir === 'next' ? 1 : -1
-    const connectionArray = Object.values(connections)
+    const connectionArray = filteredConnections
     const selectedIndex = connectionArray.map(connection => connection.id).indexOf(selected)
     const nextConnection = connectionArray[selectedIndex + indexDirection]
     if (nextConnection) {
@@ -41,17 +50,35 @@ function ProfileList(props: Props) {
   useGlobalKeyEventHandler(KeyCodes.arrow_down, selectConnection('next'))
   useGlobalKeyEventHandler(KeyCodes.arrow_up, selectConnection('previous'))
 
-  const createConnectionButton = (
+  const header = (
     <div style={{ padding: '8px 16px' }}>
       <AddButton action={actions.createConnection} />
       Connections
+      <TextField
+        size="small"
+        placeholder="Filter connections..."
+        value={filter}
+        onChange={e => setFilter(e.target.value)}
+        fullWidth
+        variant="outlined"
+        style={{ marginTop: 8 }}
+        slotProps={{
+          input: {
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search fontSize="small" />
+              </InputAdornment>
+            ),
+          },
+        }}
+      />
     </div>
   )
 
   return (
-    <List style={{ height: '100%' }} component="nav" subheader={createConnectionButton}>
+    <List style={{ height: '100%' }} component="nav" subheader={header}>
       <div className={classes.list}>
-        {Object.values(connections).map(connection => (
+        {filteredConnections.map(connection => (
           <ConnectionItemAny connection={connection} key={connection.id} selected={selected === connection.id} />
         ))}
       </div>

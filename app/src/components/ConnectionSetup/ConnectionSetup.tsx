@@ -38,13 +38,13 @@ class ConnectionSetup extends React.PureComponent<Props, {}> {
     }
 
     return (
-      <div>
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         <Collapse in={!showAdvancedSettings && !showCertificateSettings}>
           <ConnectionSettingsAny connection={connection} />
         </Collapse>
-        <Collapse in={showAdvancedSettings && !showCertificateSettings}>
+        {showAdvancedSettings && !showCertificateSettings && (
           <AdvancedConnectionSettingsAny connection={connection} />
-        </Collapse>
+        )}
         <Collapse in={showCertificateSettings}>
           <CertificatesAny connection={connection} />
         </Collapse>
@@ -142,6 +142,9 @@ const styles = (theme: Theme) => ({
     backgroundColor: theme.palette.background.paper,
     padding: theme.spacing(2),
     flex: 10,
+    display: 'flex' as const,
+    flexDirection: 'column' as const,
+    overflow: 'hidden' as const,
     // Mobile: enable scrolling
     [theme.breakpoints.down('md')]: {
       borderRadius: `${theme.shape.borderRadius}px`,

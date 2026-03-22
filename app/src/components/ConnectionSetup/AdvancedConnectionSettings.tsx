@@ -42,8 +42,8 @@ const ConnectionSettings = memo((props: Props) => {
   )
 
   return (
-    <div>
-      <form className={classes.container} noValidate autoComplete="off">
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+      <form className={classes.container} noValidate autoComplete="off" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         <Grid container spacing={3}>
           <Grid item xs={8} className={classes.gridPadding}>
             <TextField
@@ -71,35 +71,33 @@ const ConnectionSettings = memo((props: Props) => {
               <Add /> Add
             </Button>
           </Grid>
-          <Grid item xs={12} style={{ padding: 0 }}>
-            <SubscriptionsAny connection={props.connection} />
-          </Grid>
+        </Grid>
+        <div style={{ flex: 1, minHeight: 0, padding: 0 }}>
+          <SubscriptionsAny connection={props.connection} />
+        </div>
+        <Grid container spacing={3} style={{ paddingTop: 12 }} alignItems="flex-end">
           <Grid item xs={7} className={classes.gridPadding}>
             <TextField
               className={classes.fullWidth}
               label="MQTT Client ID"
-              margin="normal"
+              margin="none"
               value={props.connection.clientId}
               onChange={handleChange('clientId')}
             />
           </Grid>
           <Grid item xs={3} className={classes.gridPadding}>
-            <div>
-              <Tooltip title="Manage tls connection certificates" placement="top">
-                <Button
-                  variant="contained"
-                  className={classes.button}
-                  onClick={() => props.managerActions.toggleCertificateSettings()}
-                >
-                  <Lock /> Certificates
-                </Button>
-              </Tooltip>
-            </div>
+            <Tooltip title="Manage tls connection certificates" placement="top">
+              <Button
+                variant="contained"
+                onClick={() => props.managerActions.toggleCertificateSettings()}
+              >
+                <Lock /> Certificates
+              </Button>
+            </Tooltip>
           </Grid>
           <Grid item xs={2} className={classes.gridPadding}>
             <Button
               variant="contained"
-              className={classes.button}
               onClick={props.managerActions.toggleAdvancedSettings}
               data-testid="back-button"
             >
